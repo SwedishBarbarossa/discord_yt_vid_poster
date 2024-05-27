@@ -17,11 +17,15 @@ rss_feed_url = os.getenv("RSS_FEED_URL")
 # Discord Webhook URL
 webhook_url = os.getenv("WEBHOOK_URL")
 
-SLEEP_CONST = 10
+SLEEP_CONST = 300
 
 
 def get_latest_video() -> tuple[str, str, str] | None:
-    feed = feedparser.parse(rss_feed_url)
+    try:
+        feed = feedparser.parse(rss_feed_url)
+    except:
+        print("Failed to fetch RSS feed.")
+        return None
     if len(feed.entries) == 0:
         return
 
@@ -36,11 +40,11 @@ def get_latest_video() -> tuple[str, str, str] | None:
     return video_title, video_url, video_id
 
 
-def post_to_discord(title: str, url: str):
+def post_to_discord(webhook: str, title: str, url: str):
     if title and url:
         data = {"thread_name": title, "content": url}
-        print(data)
-        # res = requests.post(webhook_url, json=data)
+        res = requests.post(webhook, json=data)
+        print(f"Posted: {title} - {res.status_code}")
     else:
         print("No new video found in the RSS feed.")
 
@@ -69,7 +73,7 @@ if __name__ == "__main__":
             time.sleep(SLEEP_CONST)
             continue
 
-        post_to_discord(video_title, video_url)
+        post_to_discord(webhook_url, video_title, video_url)
         with open("last_video_id.txt", "w") as f:
             f.write(video_id)
 
